@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LLM Hub</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%233ba0ff'/%3E%3Cstop offset='1' stop-color='%237c5cff'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='url(%23g)'/%3E%3Cg stroke='%23fff' stroke-width='4' stroke-linecap='round'%3E%3Cpath d='M32 32L16 17M32 32L48 17M32 32L16 47M32 32L48 47'/%3E%3C/g%3E%3Cg fill='%23fff'%3E%3Ccircle cx='32' cy='32' r='8'/%3E%3Ccircle cx='16' cy='17' r='5'/%3E%3Ccircle cx='48' cy='17' r='5'/%3E%3Ccircle cx='16' cy='47' r='5'/%3E%3Ccircle cx='48' cy='47' r='5'/%3E%3C/g%3E%3C/svg%3E">
+<style>
+  :root{
+    --bg:#0b0f14; --panel:#131a23; --panel2:#0f151d; --line:#1f2a37;
+    --ink:#e6edf3; --dim:#8b98a5; --accent:#3ba0ff; --accent2:#7c5cff;
+    --think:#ffb020; --good:#2ecc71; --bad:#ff5a5a; --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:14px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+  .wrap{max-width:1080px;margin:0 auto;padding:20px 18px 40px}
+  header{display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+    padding:14px 16px;background:var(--panel);border:1px solid var(--line);border-radius:12px}
+  .dot{width:11px;height:11px;border-radius:50%;background:var(--dim)}
+  .dot.up{background:var(--good)} .dot.down{background:var(--bad)}
+  h1{font-size:16px;margin:0;font-weight:650}
+  .tag{font:12px/1 var(--mono);color:var(--dim);background:var(--panel2);
+    border:1px solid var(--line);padding:5px 8px;border-radius:7px;white-space:nowrap}
+  .spacer{flex:1}
+  .updated{font:11px/1 var(--mono);color:var(--dim)}
+
+  .banner{margin-top:14px;display:flex;align-items:center;gap:16px;padding:18px 20px;
+    border-radius:14px;border:1px solid var(--line);background:var(--panel);transition:all .2s}
+  .banner.think{border-color:#8a5b12;background:linear-gradient(90deg,rgba(255,176,32,.14),rgba(255,176,32,.03))}
+  .banner.gen{border-color:#2a6bd6;background:linear-gradient(90deg,rgba(59,160,255,.16),rgba(124,92,255,.05))}
+  .pulse{width:16px;height:16px;border-radius:50%;background:var(--dim);flex:none}
+  .banner.think .pulse{background:var(--think);animation:pulse 1s infinite}
+  .banner.gen .pulse{background:var(--accent);animation:pulse .7s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(120,150,255,.5)}70%{box-shadow:0 0 0 12px rgba(120,150,255,0)}100%{box-shadow:0 0 0 0 rgba(120,150,255,0)}}
+  .banner .state{font:600 22px/1 -apple-system,sans-serif}
+  .banner .phase{font:12px/1.3 var(--mono);color:var(--dim);margin-top:5px}
+  .banner .live{margin-left:auto;text-align:right}
+  .banner .live .n{font:600 34px/1 var(--mono)} .banner .live .u{font-size:13px;color:var(--dim);margin-left:4px}
+  .banner.think .live .n{color:var(--think)} .banner.gen .live .n{color:var(--accent)}
+  .banner .live .sub{font:11px/1 var(--mono);color:var(--dim);margin-top:6px}
+
+  .hero{display:grid;grid-template-columns:1.1fr 1fr 1fr;gap:14px;margin-top:14px}
+  @media(max-width:760px){.hero{grid-template-columns:1fr}}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px;position:relative;overflow:hidden}
+  .card .label{font-size:12px;color:var(--dim);text-transform:uppercase;letter-spacing:.6px}
+  .card .sub2{font:11px/1 var(--mono);color:var(--dim);margin-top:2px}
+  .big{font:600 34px/1 var(--mono);margin-top:10px;letter-spacing:-.5px}
+  .big.think{color:var(--think)} .big.gen{color:var(--accent)}
+  .big .u{font-size:13px;color:var(--dim);margin-left:6px}
+  .row2{display:flex;gap:18px;margin-top:12px}
+  .row2 .k{font:11px/1 var(--mono);color:var(--dim)} .row2 .v{font:600 20px/1.1 var(--mono);margin-top:4px}
+  .row2 .v.think{color:var(--think)} .row2 .v.gen{color:var(--accent)}
+  .card.speed{padding-bottom:44px}
+  .spark{position:absolute;left:0;right:0;bottom:0;height:30px;width:100%;display:block;opacity:.85;pointer-events:none;z-index:0;border-radius:0 0 10px 10px}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:14px}
+  .grid5{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:14px}
+  @media(max-width:760px){.grid{grid-template-columns:repeat(2,1fr)}.grid5{grid-template-columns:repeat(3,1fr)}}
+  @media(max-width:480px){.grid5{grid-template-columns:repeat(2,1fr)}}
+  .mini{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px 13px;position:relative;overflow:hidden;z-index:1}
+  .mini .label{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;position:relative;z-index:2}
+  .mini .v{font:600 16px/1.2 var(--mono);margin-top:7px;position:relative;z-index:2}
+  .mini .sub{font:11px/1.2 var(--mono);color:var(--dim);margin-top:5px;min-height:12px;position:relative;z-index:2}
+  .foot{margin-top:16px;font:11px/1.5 var(--mono);color:var(--dim);text-align:center}
+  a{color:var(--accent);text-decoration:none}
+  .flash{animation:flash .8s} @keyframes flash{0%{color:#fff}100%{}}
+
+  .sysinfo{display:flex;align-items:center;gap:18px;flex-wrap:wrap;margin-top:14px;padding:12px 16px;background:var(--panel);border:1px solid var(--line);border-radius:12px;font-size:13px}
+  .sysinfo strong{color:var(--dim);font-weight:normal;margin-right:4px}
+  #btnRestart{background:var(--accent);color:#fff;border:none;border-radius:6px;padding:6px 12px;cursor:pointer;font-weight:600;margin-left:auto}
+  #btnRestart:hover{filter:brightness(1.1)}
+  #btnRestart:active{opacity:0.8}
+  .models-list{margin-top:20px;display:grid;gap:10px}
+  .model-card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;align-items:center}
+  .model-card .name{font-weight:600;font-size:15px;flex:1}
+  .model-card .badge{background:var(--panel2);border:1px solid var(--line);padding:4px 8px;border-radius:6px;font:11px var(--mono);color:var(--dim)}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span id="dot" class="dot"></span>
+    <h1>LLM Hub</h1>
+    <span class="tag" id="modelName">—</span>
+    <span class="tag" id="portTag">adapter</span>
+    <span class="spacer"></span>
+    <span class="updated" id="updated">connecting…</span>
+  
+  </header>
+  <div class="grid5" style="margin-top:14px">
+    <div class="mini"><div class="label">CPU Temp</div><div class="v" id="sysTemp">0 °C</div><canvas id="sparkTemp" width="120" height="30" class="spark"></canvas></div>
+    <div class="mini"><div class="label">SSD Temp</div><div class="v" id="sysSsdTemp">0 °C</div><canvas id="sparkSsdTemp" width="120" height="30" class="spark"></canvas></div>
+    <div class="mini"><div class="label">BAT Temp</div><div class="v" id="sysBatTemp">0 °C</div><canvas id="sparkBatTemp" width="120" height="30" class="spark"></canvas></div>
+    <div class="mini"><div class="label">RAM Used</div><div class="v" id="sysMemMb">0 GB</div><canvas id="sparkRam" width="120" height="30" class="spark"></canvas></div>
+    <div class="mini"><div class="label">SSD Free</div><div class="v" id="sysDiskGb">0 GB</div><div class="sub"><button id="btnRestart" style="width:100%;font-size:11px;padding:4px;margin-top:2px">Restart Model</button></div></div>
+  </div>
+
+  <div class="banner" id="banner">
+    <span class="pulse"></span>
+    <div>
+      <div class="state" id="state">Connecting</div>
+      <div class="phase" id="phase">waiting for a request</div>
+    </div>
+    <div class="live">
+      <div><span class="n" id="liveTps">–</span><span class="u" id="liveUnit">tok/s</span></div>
+      <div class="sub" id="liveSub">elapsed 0.0s</div>
+    </div>
+  </div>
+
+  <div class="hero">
+    <div class="card">
+      <div class="label">Live tokens this turn</div>
+      <div class="sub2">thinking &amp; answer, counting live</div>
+      <div class="row2">
+        <div><div class="k">THINKING</div><div class="v think" id="curReason">0</div></div>
+        <div><div class="k">ANSWER</div><div class="v gen" id="curContent">0</div></div>
+        <div><div class="k">TTFT</div><div class="v" id="ttft">–</div></div>
+      </div>
+    </div>
+    <div class="card speed">
+      <div class="label">Thinking speed</div>
+      <div class="sub2">last turn · tok/s</div>
+      <div class="big think"><span id="thinkTps">–</span><span class="u">tok/s</span></div>
+      <div class="sub2" style="margin-top:7px">avg <b id="thinkAvg" style="color:var(--think)">–</b> · <span id="thinkN">0</span> turns</div>
+      <canvas class="spark" id="sparkThink"></canvas>
+    </div>
+    <div class="card speed">
+      <div class="label">Answer speed</div>
+      <div class="sub2">last turn · tok/s</div>
+      <div class="big gen"><span id="genTps">–</span><span class="u">tok/s</span></div>
+      <div class="sub2" style="margin-top:7px">avg <b id="genAvg" style="color:var(--accent)">–</b> · <span id="genN">0</span> turns</div>
+      <canvas class="spark" id="sparkGen"></canvas>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="mini"><div class="label">Turns</div><div class="v" id="turns">0</div><div class="sub"></div></div>
+    <div class="mini"><div class="label">Answer tokens</div><div class="v" id="totContent">0</div><div class="sub">total</div></div>
+    <div class="mini"><div class="label">Thinking tokens</div><div class="v" id="totReason">0</div><div class="sub">total</div></div>
+    <div class="mini"><div class="label">Last turn</div><div class="v" id="lastDur">–</div><div class="sub" id="lastMix"></div></div>
+  </div>
+
+  <div style="margin-top:24px;font-weight:600;color:var(--dim);font-size:13px;text-transform:uppercase;letter-spacing:1px">Cross-Model Usage Tracking</div>
+  <div class="grid" style="margin-top:8px">
+    <div class="mini"><div class="label">Session Tokens</div><div class="v" id="sessTokens">0</div><div class="sub" id="sessTime">0m elapsed</div></div>
+    <div class="mini"><div class="label">Session Turns</div><div class="v" id="sessTurns">0</div><div class="sub">current conversation</div></div>
+    <div class="mini"><div class="label">All-Time Tokens</div><div class="v" id="allTokens">0</div><div class="sub">lifetime usage</div></div>
+    <div class="mini"><div class="label">All-Time Turns</div><div class="v" id="allTurns">0</div><div class="sub">lifetime usage</div></div>
+  </div>
+
+  <div class="models-list" id="modelsList" style="margin-top:24px">
+    <!-- Models injected by JS -->
+  </div>
+
+  <div class="foot">live per-token stats from the adapter proxy · polling <span id="ivl">400</span>ms ·
+    <a id="webui" href="https://github.com/meisnick/llm-hub" target="_blank">LLM Hub ↗</a></div>
+</div>
+
+<script>
+// Where is the router? 1) ?hub=http://host:8090  2) same origin when the router serves this
+// page (http://host:8090/)  3) this host on :8090 when opened from a separate static server.
+const QS = new URLSearchParams(location.search);
+const HUB = (QS.get("hub") || (location.port === "8090" || QS.has("demo") ? location.origin
+            : `${location.protocol === "https:" ? "https" : "http"}://${location.hostname || "localhost"}:8090`)).replace(/\/$/, "");
+const SLOTS = [ {stats:`${HUB}/stats`} ];
+const INTERVAL = 400;
+document.getElementById("ivl").textContent = INTERVAL;
+const $ = id => document.getElementById(id);
+const fmt = n => (n==null||isNaN(n)) ? "–" : Number(n).toLocaleString();
+const fmt1 = n => (n==null||isNaN(n)) ? "–" : Number(n).toFixed(1);
+const mean = a => (a && a.length) ? a.reduce((x,y)=>x+y,0)/a.length : null;
+let lastTurns = -1, sGen = [], sThink = [], sTemp = [], sRam = [], sSsdTemp = [], sBatTemp = [];
+
+function draw(id,data,color){
+  const c=$(id); const dpr=window.devicePixelRatio||1;
+  const w=c.clientWidth,h=c.clientHeight; if(!w||!h)return;
+  c.width=w*dpr;c.height=h*dpr;const x=c.getContext("2d");x.scale(dpr,dpr);
+  x.clearRect(0,0,w,h); if(data.length<2)return;
+  const max=Math.max(1,...data),step=w/59;
+  const d=data.slice(-60);
+  x.beginPath();
+  d.forEach((v,i)=>{const px=i*step,py=h-(v/max)*(h-6)-3;i?x.lineTo(px,py):x.moveTo(px,py);});
+  x.strokeStyle=color;x.lineWidth=1.6;x.lineJoin="round";x.stroke();
+  const g=x.createLinearGradient(0,0,0,h);g.addColorStop(0,color+"33");g.addColorStop(1,color+"00");
+  x.lineTo((d.length-1)*step,h);x.lineTo(0,h);x.closePath();x.fillStyle=g;x.fill();
+}
+function flash(el){el.classList.remove("flash");void el.offsetWidth;el.classList.add("flash");}
+
+async function fetchSlot(slot){
+  try{ return await (await fetch(slot.stats,{cache:"no-store"})).json(); }
+  catch(e){ return null; }
+}
+async function tick(){
+  try{
+    const results = await Promise.all(SLOTS.map(fetchSlot));
+    const live = results.filter(Boolean);
+    // pick: an active one first, else an "up" one, else any responder
+    let s = live.find(x=>x.active) || live.find(x=>x.up) || live[0];
+    if(!s){ throw new Error("no slot"); }
+    $("dot").className="dot up";
+    $("modelName").textContent = s.model || "—";
+    $("portTag").textContent = s.up ? "loaded" : "server down";
+    const b=$("banner"); b.classList.remove("think","gen");
+    if(s.active && s.phase==="thinking"){
+      b.classList.add("think"); $("state").textContent="Thinking";
+      $("phase").textContent="generating reasoning…"; $("liveUnit").textContent="tok/s thinking";
+    }else if(s.active && s.phase==="generating"){
+      b.classList.add("gen"); $("state").textContent="Generating";
+      $("phase").textContent="writing the answer…"; $("liveUnit").textContent="tok/s answer";
+    }else if(s.active){
+      $("state").textContent="Prefilling"; $("phase").textContent="processing the prompt…"; $("liveUnit").textContent="tok/s";
+    }else{
+      $("state").textContent="Idle"; $("phase").textContent="waiting for a request"; $("liveUnit").textContent="tok/s";
+    }
+    if(s.turn){
+      $("liveTps").textContent=fmt1(s.turn.tps);
+      $("liveSub").textContent=`elapsed ${fmt1(s.turn.elapsed)}s`+(s.turn.ttft?` · ttft ${fmt1(s.turn.ttft)}s`:"");
+      $("curReason").textContent=fmt(s.turn.reason_tokens);
+      $("curContent").textContent=fmt(s.turn.content_tokens);
+      if(s.turn.ttft) $("ttft").textContent=fmt1(s.turn.ttft)+"s";
+    }else{
+      $("liveTps").textContent="–"; $("liveSub").textContent="elapsed 0.0s";
+      $("curReason").textContent="0"; $("curContent").textContent="0";
+    }
+    if(s.last){
+      $("thinkTps").textContent=fmt1(s.last.think_tps);
+      $("genTps").textContent=fmt1(s.last.gen_tps);
+      $("ttft").textContent=s.last.ttft?fmt1(s.last.ttft)+"s":"–";
+      $("lastDur").textContent=fmt1(s.last.duration)+"s";
+      $("lastMix").textContent=`${fmt(s.last.content_tokens)} ans · ${fmt(s.last.reason_tokens)} think`;
+    }
+    if(s.totals){
+      $("turns").textContent=fmt(s.totals.turns);
+      $("totContent").textContent=fmt(s.totals.content_tokens);
+      $("totReason").textContent=fmt(s.totals.reason_tokens);
+      if(s.totals.turns!==lastTurns){lastTurns=s.totals.turns; flash($("thinkTps")); flash($("genTps"));}
+    }
+    if(s.history){sGen=s.history;} if(s.think_history){sThink=s.think_history;}
+    $("thinkAvg").textContent=fmt1(mean(sThink)); $("thinkN").textContent=sThink.length;
+    $("genAvg").textContent=fmt1(mean(sGen)); $("genN").textContent=sGen.length;
+    draw("sparkGen",sGen,"#3ba0ff"); draw("sparkThink",sThink,"#ffb020");
+    $("updated").textContent="updated "+new Date().toLocaleTimeString();
+  }catch(e){
+    $("dot").className="dot down"; $("updated").textContent="offline — retrying…";
+  }
+}
+async function fetchSysinfo() {
+  try {
+    const res = await fetch(`${HUB}/sysinfo`, {cache:"no-store"});
+    const s = await res.json();
+    $("sysMemMb").textContent = (s.memory || "n/a").split(" / ")[0].replace(' used', '');
+    $("sysDiskGb").textContent = s.disk_free_gb != null ? Math.round(s.disk_free_gb) + " GB" : "–";
+    // temperature tiles only appear when the router has a temp_command configured
+    const T = [["sysTemp","cpu_temp",sTemp],["sysSsdTemp","ssd_temp",sSsdTemp],["sysBatTemp","bat_temp",sBatTemp]];
+    for (const [id,key,arr] of T) {
+      const tile = $(id).parentElement;
+      if (s[key] == null) { tile.style.display = "none"; continue; }
+      tile.style.display = ""; $(id).textContent = s[key] + " °C";
+      arr.push(s[key]); if(arr.length>60) arr.shift();
+    }
+    if (s.memory_used_mb != null) { sRam.push(s.memory_used_mb); if(sRam.length>60) sRam.shift(); }
+    draw("sparkTemp",sTemp,"#ff5c5c"); draw("sparkRam",sRam,"#c75cff");
+    draw("sparkSsdTemp",sSsdTemp,"#5cffab"); draw("sparkBatTemp",sBatTemp,"#ffb020");
+    
+    if (s.session) {
+      $("sessTokens").textContent = fmt(s.session.gen_tokens);
+      $("sessTurns").textContent = fmt(s.session.turns);
+      let mins = Math.floor((Date.now()/1000 - s.session.started)/60);
+      $("sessTime").textContent = mins + "m elapsed";
+    }
+    if (s.alltime) {
+      $("allTokens").textContent = fmt(s.alltime.gen_tokens);
+      $("allTurns").textContent = fmt(s.alltime.turns);
+    }
+    
+    let html = `<div style="margin-bottom:6px;font-weight:600;color:var(--dim);font-size:13px;text-transform:uppercase;letter-spacing:1px">Installed Models</div>`;
+    for(let m of (s.models || [])) {
+      let isActive = m.id === s.active_model;
+      let bcolor = isActive ? 'var(--accent)' : 'var(--line)';
+      html += `<div class="model-card" style="border-color:${bcolor}">
+        <div class="name">${m.id} ${isActive ? '<span style="color:var(--accent);font-size:12px;margin-left:8px">● ACTIVE</span>' : ''}</div>
+        ${m.engine ? `<div class="badge" style="margin-right:6px">${m.engine}</div>` : ''}
+        <div class="badge">${m.params}</div>
+        <div class="badge" style="margin-left:6px">${m.size}</div>
+      </div>`;
+    }
+    $("modelsList").innerHTML = html;
+  } catch(e) {}
+}
+setInterval(fetchSysinfo, 2000);
+fetchSysinfo();
+
+$("btnRestart").onclick = async () => {
+  $("btnRestart").textContent = "Restarting...";
+  try { await fetch(`${HUB}/restart`, {method:"POST"}); } catch(e){}
+  setTimeout(()=>{$("btnRestart").textContent = "Restart Model";}, 3000);
+}
+tick(); setInterval(tick, INTERVAL);
+window.addEventListener("resize",()=>{draw("sparkGen",sGen,"#3ba0ff");draw("sparkThink",sThink,"#ffb020");});
+</script>
+</body>
+</html>
