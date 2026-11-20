@@ -231,7 +231,9 @@ def _mem_used_mb():
 
 
 def _temps():
-    """Optional: `temp_command` prints lines like 'CPU 61.2' / 'SSD 40' / 'BAT 31'."""
+    """Optional: `temp_command` prints lines like 'CPU die 61.2 C' / 'NAND 40 C [extra]'.
+
+    The reading is the number followed by C/°C (anywhere in the line), else the last number."""
     cmd = CFG.get("temp_command")
     out = {"cpu_temp": None, "ssd_temp": None, "bat_temp": None}
     if not cmd:
@@ -243,7 +245,8 @@ def _temps():
     buckets = {"cpu_temp": [], "ssd_temp": [], "bat_temp": []}
     pats = CFG.get("temp_patterns") or {"cpu_temp": "CPU", "ssd_temp": "SSD|NAND", "bat_temp": "BAT|battery"}
     for line in text.splitlines():
-        v = re.search(r"(-?\d+(?:\.\d+)?)\s*(?:°?C)?\s*$", line.strip())
+        v = (re.search(r"(-?\d+(?:\.\d+)?)\s*°?C\b", line)
+             or re.search(r"(-?\d+(?:\.\d+)?)\s*$", line.strip()))
         if not v:
             continue
         for k, pat in pats.items():
@@ -438,6 +441,9 @@ def main():
             threading.Thread(target=ensure_loaded, args=(dm["id"],), daemon=True).start()
     print(f"LLM Hub router on {CFG['listen_host']}:{CFG['listen_port']} - "
           f"{len(MODELS)} models, active={ACTIVE}, config={CFG['_path']}", flush=True)
+    if CFG.get("dashboard_port"):  # optional second port (e.g. to keep an old dashboard URL working)
+        dsrv = http.server.ThreadingHTTPServer((CFG["listen_host"], int(CFG["dashboard_port"])), RouterHandler)
+        threading.Thread(target=dsrv.serve_forever, daemon=True).start()
     http.server.ThreadingHTTPServer((CFG["listen_host"], int(CFG["listen_port"])),
                                     RouterHandler).serve_forever()
 

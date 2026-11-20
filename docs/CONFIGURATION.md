@@ -17,6 +17,7 @@ are ignored, so you can use them for comments.
 |---|---|---|
 | `listen_host` | `0.0.0.0` | router bind address. Use `127.0.0.1` for local-only |
 | `listen_port` | `8090` | router port (the dashboard assumes 8090 unless you pass `?hub=`) |
+| `dashboard_port` | `null` | optional extra port that serves the same dashboard/API (the page still talks to `listen_port`) |
 | `state_dir` | `~/.local/state/llmhub` | logs, `usage.json` (all-time counters) |
 | `launchd_prefix` | `local.llmhub` | launchd label prefix: `<prefix>.router`, `<prefix>.<key>-proxy`, `<prefix>.<key>-server` |
 | `server_plist_dir` | `~/.config/llmhub/launchd` | where on-demand server plists are written (not auto-loaded) |
@@ -69,7 +70,8 @@ Two models may share a `server_port` (only one runs at a time) but never a `prox
 ## Temperatures (optional)
 
 The dashboard's CPU/SSD/battery tiles appear only when `temp_command` is set. The command
-should print one reading per line, ending in a number (optionally followed by `C` or `°C`).
+should print one reading per line. The value is the first number followed by `C` or `°C`
+(trailing text is fine), or else the last number on the line.
 The default patterns sort lines into buckets and average each bucket:
 
 ```
