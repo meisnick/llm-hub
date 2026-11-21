@@ -353,6 +353,9 @@ class H(http.server.BaseHTTPRequestHandler):
                 if ENGINE:
                     is_mtplx = ENGINE == "mtplx"
                     is_tf = ENGINE == "tensorfold"
+                    # generic OpenAI servers (oMLX, vLLM, ...) split reasoning themselves and
+                    # enforce response_format natively: handle them like TensorFold (passthrough)
+                    is_tf = is_tf or ENGINE == "openai"
                 else:  # legacy heuristic when no engine is configured
                     is_mtplx = "mtplx" in MODEL.lower()
                     is_tf = MODEL.lower().startswith("tf-") or "tensorfold" in MODEL.lower()
