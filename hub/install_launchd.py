@@ -15,13 +15,36 @@ Layout produced:
                                                        llm_switch.py, so a login never loads every
                                                        model at once.
 """
-import argparse, os, plistlib, subprocess, sys
+import argparse, os, plistlib, subprocess, sys, time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import hubconfig  # noqa: E402
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 AGENTS = os.path.expanduser("~/Library/LaunchAgents")
+
+
+def _loaded(dom, label):
+    return subprocess.run(["launchctl", "print", f"{dom}/{label}"],
+                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0
+
+
+def reload_agent(dom, label, path):
+    """bootout returns before the old job has exited; bootstrapping right away then fails
+    (EIO) and leaves the agent unloaded. Wait for it to be gone, then bootstrap with retries."""
+    subprocess.run(["launchctl", "bootout", f"{dom}/{label}"],
+                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    for _ in range(50):
+        if not _loaded(dom, label):
+            break
+        time.sleep(0.2)
+    for attempt in range(5):
+        if subprocess.run(["launchctl", "bootstrap", dom, path],
+                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0 \
+                or _loaded(dom, label):
+            return
+        time.sleep(1)
+    print(f"WARNING: could not load {label}; run: launchctl bootstrap {dom} {path}")
 
 
 def plist(label, argv, log, env=None, cwd=None, interactive=False):
@@ -94,9 +117,7 @@ def main():
             plistlib.dump(d, f)
         print(("loaded   " if auto else "written  ") + path)
         if auto:  # reload so code/config changes take effect
-            subprocess.run(["launchctl", "bootout", f"{dom}/{d['Label']}"],
-                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            subprocess.run(["launchctl", "bootstrap", dom, path])
+            reload_agent(dom, d["Label"], path)
 
     if a.wired_limit:
         lab = hubconfig.label(cfg, None, "wiredlimit")
